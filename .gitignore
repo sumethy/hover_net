@@ -10,3 +10,7 @@ exp_output/
 *.npz
 *.png
 *.log
+
+checkpoint/
+data/
+tmp/
