@@ -206,6 +206,7 @@ class MyInferManager(object):
         # return net
 
     def getROI(self, original, mask):
+        # TODO call object detection model on original
         global num_img
         already_saved_orignal = False
         # mask is 2D ndarray: 0 (background), 1,2,3,4. we want only 1 (red) cell
@@ -257,6 +258,8 @@ class MyInferManager(object):
                 # roi.save('/tmp/centroblast/' + str(uuid.uuid4()) + '.png')
                 roi.save('/centroblast/tmp/wsiScanResult/image' + str(num_img-1).zfill(4) + '_ROI' +str(counter).zfill(4)+'_'+str(bbox[0]).zfill(3)+'_'+str(bbox[1]).zfill(3)+'_'+str(bbox[2]).zfill(3)+'_'+str(bbox[3]).zfill(3)+'.png')
                 counter += 1
+                
+                # TODO call classification model on roi
 
         # return cb_detected
 
@@ -395,3 +398,9 @@ if __name__ == '__main__':
         from infer.wsi import InferManager
         infer = InferManager(**method_args)
         infer.process_wsi_list(run_args)
+
+
+"""
+example how to run this file:
+python my_infer.py --gpu=0,1 --nr_types=5 --type_info_path=type_info.json --model_path=checkpoint/hovernet_fast_monusac_type_tf2pytorch.tar --batch_size=64 tile --input_dir=/centroblast/tmp/image --mrxs_path=/centroblast/tmp/data/CB-001-1.mrxs --output_dir=/centroblast/tmp/output
+"""
