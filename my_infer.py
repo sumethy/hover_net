@@ -139,7 +139,11 @@ class MyDataSet(Dataset):
         array = array[...,:3]
         # array = np.swapaxes(array,0,2)
 
-        return torch.tensor(array, dtype=torch.uint8)
+        return {
+            "input_tensor": torch.tensor(array, dtype=torch.uint8),
+            "x" : self.tiles[index][0],
+            "y": self.tiles[index][1]
+        }
 
 class MyInferManager(object):
 
@@ -205,7 +209,7 @@ class MyInferManager(object):
         self.post_proc_func = getattr(module_lib, "process")
         # return net
 
-    def getROI(self, original, mask):
+    def getROI(self, original, mask, coord_x, coord_y):
         # TODO call object detection model on original
         global num_img
         already_saved_orignal = False
@@ -240,7 +244,8 @@ class MyInferManager(object):
             contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
             if isCellCB(contours):
                 if not already_saved_orignal: # save original only have at least 1 CB was detected (and save only once!)
-                    original.save('/centroblast/tmp/wsiScanResult/image' + str(num_img).zfill(4) + '.png')
+                    # original.save('/centroblast/tmp/wsiScanResult/image' + str(num_img).zfill(4) + '.png')
+                    original.save('/centroblast/tmp/wsiScanResult/image_' + str(coord_x).zfill(7) + "_" + str(coord_y).zfill(7) + '.png')
                     num_img += 1
                     already_saved_orignal = True
 
@@ -256,7 +261,8 @@ class MyInferManager(object):
                 bbox[3] = min(255, bbox[3])
                 roi = original.crop(bbox)
                 # roi.save('/tmp/centroblast/' + str(uuid.uuid4()) + '.png')
-                roi.save('/centroblast/tmp/wsiScanResult/image' + str(num_img-1).zfill(4) + '_ROI' +str(counter).zfill(4)+'_'+str(bbox[0]).zfill(3)+'_'+str(bbox[1]).zfill(3)+'_'+str(bbox[2]).zfill(3)+'_'+str(bbox[3]).zfill(3)+'.png')
+                # roi.save('/centroblast/tmp/wsiScanResult/image' + str(num_img-1).zfill(4) + '_ROI' +str(counter).zfill(4)+'_'+str(bbox[0]).zfill(3)+'_'+str(bbox[1]).zfill(3)+'_'+str(bbox[2]).zfill(3)+'_'+str(bbox[3]).zfill(3)+'.png')
+                roi.save('/centroblast/tmp/wsiScanResult/image_' + str(coord_x).zfill(7) + "_" + str(coord_y).zfill(7) + '_ROI' +str(counter).zfill(4)+'_'+str(bbox[0]).zfill(3)+'_'+str(bbox[1]).zfill(3)+'_'+str(bbox[2]).zfill(3)+'_'+str(bbox[3]).zfill(3)+'.png')
                 counter += 1
                 
                 # TODO call classification model on roi
@@ -274,10 +280,12 @@ class MyInferManager(object):
         for b in range(output_batch.shape[0]):
             seg_mask = output_batch[b,:,:,0] # the first channel is the segmentation mask
             seg_mask = cv2.resize(seg_mask, (256,256)) # https://stackoverflow.com/questions/55428929/
-            original_image = batch[b].detach().numpy()
+            original_image = batch["input_tensor"][b].detach().numpy()
             original_image = Image.fromarray(original_image)
+            coord_x = batch["x"][b].detach().numpy()
+            coord_y = batch["y"][b].detach().numpy()
             # original_image.save('/tmp/centroblast/' + str(uuid.uuid4()) + '.png')
-            self.getROI(original_image, seg_mask)
+            self.getROI(original_image, seg_mask, coord_x, coord_y)
 
         # print(type(batch))
         # print(batch.shape)
@@ -287,7 +295,8 @@ class MyInferManager(object):
     def process_tiles(self, run_args):
         print("number of samples",len(self.dataset))
         for i, batch in tqdm(enumerate(self.dataloader)):
-            output_batch = self.run_step(batch) # first channel of output is probably the segmentation mask (channel last format)
+            # print(batch)
+            output_batch = self.run_step(batch["input_tensor"]) # first channel of output is probably the segmentation mask (channel last format)
             # print(output_batch.shape)
             self.post_process_cb(batch, output_batch)
             # break
