@@ -152,6 +152,10 @@ class MyInferManager(object):
         self.dataset = MyDataSet(self.mrxs_path)
         self.dataloader = DataLoader(self.dataset,batch_size=32,num_workers=32)
 
+        self.filename_prefix =  self.mrxs_path.split('/')[-1].split('.')[0]
+        self.filename_prefix = re.sub("-", "_", self.filename_prefix)
+        self.filename_prefix += "_"
+
         self.run_step = None
         for variable, value in kwargs.items():
             self.__setattr__(variable, value)
@@ -245,7 +249,7 @@ class MyInferManager(object):
             if isCellCB(contours):
                 if not already_saved_orignal: # save original only have at least 1 CB was detected (and save only once!)
                     # original.save('/centroblast/tmp/wsiScanResult/image' + str(num_img).zfill(4) + '.png')
-                    original.save('/centroblast/tmp/wsiScanResult/image_' + str(coord_x).zfill(7) + "_" + str(coord_y).zfill(7) + '.png')
+                    original.save('/centroblast/tmp/wsiScanResult/' + self.filename_prefix + str(coord_x).zfill(7) + "_" + str(coord_y).zfill(7) + '.png')
                     num_img += 1
                     already_saved_orignal = True
 
@@ -262,7 +266,7 @@ class MyInferManager(object):
                 roi = original.crop(bbox)
                 # roi.save('/tmp/centroblast/' + str(uuid.uuid4()) + '.png')
                 # roi.save('/centroblast/tmp/wsiScanResult/image' + str(num_img-1).zfill(4) + '_ROI' +str(counter).zfill(4)+'_'+str(bbox[0]).zfill(3)+'_'+str(bbox[1]).zfill(3)+'_'+str(bbox[2]).zfill(3)+'_'+str(bbox[3]).zfill(3)+'.png')
-                roi.save('/centroblast/tmp/wsiScanResult/image_' + str(coord_x).zfill(7) + "_" + str(coord_y).zfill(7) + '_ROI' +str(counter).zfill(4)+'_'+str(bbox[0]).zfill(3)+'_'+str(bbox[1]).zfill(3)+'_'+str(bbox[2]).zfill(3)+'_'+str(bbox[3]).zfill(3)+'.png')
+                roi.save('/centroblast/tmp/wsiScanResult/' + self.filename_prefix + str(coord_x).zfill(7) + "_" + str(coord_y).zfill(7) + '_ROI' +str(counter).zfill(4)+'_'+str(bbox[0]).zfill(3)+'_'+str(bbox[1]).zfill(3)+'_'+str(bbox[2]).zfill(3)+'_'+str(bbox[3]).zfill(3)+'.png')
                 counter += 1
                 
                 # TODO call classification model on roi
